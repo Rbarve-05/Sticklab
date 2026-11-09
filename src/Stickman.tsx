@@ -63,7 +63,6 @@ export const Stickman: React.FC<StickmanProps> = ({
   const bodyRotation =
     action === "fall" ? 72 : running ? -8 : action === "jump" ? -5 : 0;
   const armSpread = action === "fall" || action === "jump";
-  const armLift = action === "fall" ? -115 : -75;
 
   const line = {
     fill: "none",
