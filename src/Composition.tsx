@@ -2,9 +2,9 @@ import React from "react";
 import { Composition } from "remotion";
 import { StoryPlayer } from "./story/StoryPlayer";
 import { compileStory } from "./story/StoryEngine";
-import { sampleStory } from "./story/sampleStory";
+import { generatedStory } from "./story/generatedStory";
 
-const compiledStory = compileStory(sampleStory);
+const compiledStory = compileStory(generatedStory);
 
 export const MyComposition: React.FC = () => {
   return (
