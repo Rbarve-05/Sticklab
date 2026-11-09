@@ -13,8 +13,6 @@ export type StickmanProps = {
   strokeWidth?: number;
 };
 
-const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
-
 /**
  * Reusable procedural stickman. Coordinates are relative to the character's
  * hip origin (0, 0). The same component can be reused in any Remotion scene.
