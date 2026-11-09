@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { Stickman, StickmanExpression } from "./Stickman";
+import { Stickman, type StickmanExpression } from "./Stickman";
 
 const expressionSequence: StickmanExpression[] = [
   "happy",
