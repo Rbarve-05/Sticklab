@@ -1,48 +1,55 @@
 import React from "react";
 import { useCurrentFrame } from "remotion";
 import { Scene } from "./Scene";
-import { Stickman, type StickmanExpression } from "./Stickman";
-
-const expressionSequence: StickmanExpression[] = [
-  "happy",
-  "shocked",
-  "sad",
-  "angry",
-];
-
-const expressionLabels = ["HAPPY", "SHOCKED", "SAD", "ANGRY"];
+import { Stickman } from "./Stickman";
+import { Phone, SpeechBubble, Table } from "./Props";
 
 export const StickmanDemo: React.FC = () => {
   const frame = useCurrentFrame();
-  const expressionIndex = Math.min(3, Math.floor(frame / 75));
-  const expression = expressionSequence[expressionIndex];
+  const reveal = frame >= 150;
 
   return (
-    <Scene title="STICKLAB" subtitle="EXPRESSIVE CHARACTER + SCENE ENGINE">
-      <rect x="350" y="330" width="380" height="76" rx="38" fill="#171717" />
-      <text
-        x="540"
-        y="379"
-        textAnchor="middle"
-        fontSize="27"
-        fontWeight="700"
-        letterSpacing="3"
-        fill="#FFD84D"
-      >
-        {expressionLabels[expressionIndex]}
-      </text>
+    <Scene
+      title="STICKLAB"
+      subtitle="MULTI-CHARACTER SCENE TEST"
+      floorY={1210}
+    >
+      {/* Simple environment */}
+      <rect x="90" y="470" width="900" height="650" rx="44" fill="#FFF8DF" opacity="0.55" />
+      <circle cx="540" cy="710" r="190" fill="#FFD84D" opacity="0.12" />
 
-      <Stickman
+      {/* Dialogue changes halfway through the 10-second preview */}
+      <SpeechBubble
         x={540}
-        y={1080}
-        scale={2.1}
-        speed={1}
-        action="walk"
-        expression={expression}
+        y={650}
+        text={reveal ? "WHO SENT IT?" : "NEW MESSAGE!"}
       />
 
-      <text x="540" y="1320" textAnchor="middle" fontSize="26" fill="#777777">
-        Articulated walk cycle · Four emotions
+      {/* Two independent characters sharing one scene */}
+      <Stickman
+        x={315}
+        y={1090}
+        scale={1.35}
+        action="idle"
+        expression={reveal ? "shocked" : "happy"}
+      />
+      <Stickman
+        x={765}
+        y={1090}
+        scale={1.35}
+        action="idle"
+        expression={reveal ? "happy" : "shocked"}
+      />
+
+      {/* A prop staged between the characters */}
+      <Table x={540} y={1080} scale={0.82} />
+      <Phone x={540} y={1025} scale={0.82} />
+
+      <text x="540" y="1390" textAnchor="middle" fontSize="27" fontWeight="700" fill="#171717">
+        TWO CHARACTERS · ONE SHARED SCENE
+      </text>
+      <text x="540" y="1435" textAnchor="middle" fontSize="22" fill="#777777">
+        Dialogue · Expressions · Props
       </text>
     </Scene>
   );
