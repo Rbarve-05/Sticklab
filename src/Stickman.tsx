@@ -22,7 +22,7 @@ export type StickmanProps = {
   accent?: string;
 };
 
-/** Reusable expressive stickman built from deterministic SVG animation. */
+/** Reusable expressive stickman with articulated, frame-deterministic limbs. */
 export const Stickman: React.FC<StickmanProps> = ({
   x = 540,
   y = 850,
@@ -38,8 +38,18 @@ export const Stickman: React.FC<StickmanProps> = ({
   const t = (frame / 30) * speed;
   const running = action === "run";
   const moving = action === "walk" || running;
-  const phase = t * (running ? 13 : 7);
+  const phase = t * (running ? 15 : 8);
   const swing = moving ? Math.sin(phase) : 0;
+  const stride = running ? 34 : 23;
+
+  // Opposing leg phases create a proper alternating gait.
+  const leftLeg = swing * stride;
+  const rightLeg = -swing * stride;
+  const leftKnee = moving ? Math.max(0, Math.cos(phase)) * (running ? 38 : 24) : 0;
+  const rightKnee = moving ? Math.max(0, -Math.cos(phase)) * (running ? 38 : 24) : 0;
+  const leftArm = moving ? -swing * (running ? 32 : 23) : 0;
+  const rightArm = -leftArm;
+  const elbowBend = moving ? 12 + Math.abs(swing) * 8 : 10;
 
   const bounce =
     action === "idle"
@@ -47,13 +57,11 @@ export const Stickman: React.FC<StickmanProps> = ({
       : action === "jump"
         ? -Math.abs(Math.sin(phase * 0.5)) * 42
         : moving
-          ? Math.abs(Math.sin(phase)) * (running ? 13 : 7)
+          ? Math.abs(Math.sin(phase * 2)) * (running ? 4 : 2.5)
           : 0;
 
-  const legAngle = moving ? swing * (running ? 42 : 30) : 0;
-  const armAngle = moving ? -swing * (running ? 42 : 28) : 0;
   const bodyRotation =
-    action === "fall" ? 72 : action === "run" ? -9 : action === "jump" ? -5 : 0;
+    action === "fall" ? 72 : running ? -8 : action === "jump" ? -5 : 0;
   const armSpread = action === "fall" || action === "jump";
   const armLift = action === "fall" ? -115 : -75;
 
@@ -81,18 +89,38 @@ export const Stickman: React.FC<StickmanProps> = ({
     }
   })();
 
+  const renderLeg = (angle: number, knee: number, side: -1 | 1) => (
+    <g transform={`rotate(${angle}, 0, 0)`}>
+      <path d="M 0 0 L 0 39" {...line} />
+      <g transform="translate(0, 39)">
+        <g transform={`rotate(${knee}, 0, 0)`}>
+          <path d="M 0 0 L 0 36" {...line} />
+          <path
+            d={side < 0 ? "M 0 36 L -12 39" : "M 0 36 L 12 39"}
+            {...line}
+            strokeWidth={strokeWidth + 1}
+          />
+        </g>
+      </g>
+    </g>
+  );
+
+  const renderArm = (angle: number, side: -1 | 1) => (
+    <g transform={`translate(0, -78) rotate(${angle})`}>
+      <path d="M 0 0 L 0 28" {...line} />
+      <g transform={`translate(0, 28) rotate(${side * elbowBend})`}>
+        <path d="M 0 0 L 0 28" {...line} />
+        <circle cx="0" cy="28" r="5" fill={accent} stroke={stroke} strokeWidth={2.5} />
+      </g>
+    </g>
+  );
+
   return (
     <g transform={`translate(${x}, ${y + bounce})`}>
       <g transform={`rotate(${bodyRotation}, 0, -48) scale(${scale})`}>
-        {/* Legs and simple sneaker-like feet */}
-        <g transform={`rotate(${legAngle}, 0, 0)`}>
-          <path d="M 0 0 L -7 39 L -18 73" {...line} />
-          <path d="M -18 73 L -29 76" {...line} strokeWidth={strokeWidth + 1} />
-        </g>
-        <g transform={`rotate(${-legAngle}, 0, 0)`}>
-          <path d="M 0 0 L 7 39 L 18 73" {...line} />
-          <path d="M 18 73 L 29 76" {...line} strokeWidth={strokeWidth + 1} />
-        </g>
+        {/* Articulated legs: thigh, knee, shin and foot */}
+        {renderLeg(leftLeg, leftKnee, -1)}
+        {renderLeg(rightLeg, rightKnee, 1)}
 
         {/* Signature accent-colored torso */}
         <path d="M 0 -98 L 0 0" {...line} strokeWidth={strokeWidth + 11} />
@@ -104,15 +132,22 @@ export const Stickman: React.FC<StickmanProps> = ({
           strokeLinecap="round"
         />
 
-        {/* Arms, with raised poses for jumping and falling */}
-        <g transform={armSpread ? `rotate(${armLift}, 0, -78)` : `rotate(${armAngle}, 0, -78)`}>
-          <path d="M 0 -78 L -2 -49 L -27 -25" {...line} />
-          <circle cx="-27" cy="-25" r="5" fill={accent} stroke={stroke} strokeWidth={2.5} />
-        </g>
-        <g transform={armSpread ? `rotate(${-armLift}, 0, -78)` : `rotate(${-armAngle}, 0, -78)`}>
-          <path d="M 0 -78 L 2 -49 L 27 -25" {...line} />
-          <circle cx="27" cy="-25" r="5" fill={accent} stroke={stroke} strokeWidth={2.5} />
-        </g>
+        {/* Articulated arms swing opposite to the legs */}
+        {armSpread ? (
+          <>
+            <g transform="translate(0, -78) rotate(-75)">
+              <path d="M 0 0 L 0 28 L -18 48" {...line} />
+            </g>
+            <g transform="translate(0, -78) rotate(75)">
+              <path d="M 0 0 L 0 28 L 18 48" {...line} />
+            </g>
+          </>
+        ) : (
+          <>
+            {renderArm(leftArm, -1)}
+            {renderArm(rightArm, 1)}
+          </>
+        )}
 
         {/* Expressive face */}
         <circle cx="0" cy="-126" r="29" fill="#FFFFFF" stroke={stroke} strokeWidth={strokeWidth} />
