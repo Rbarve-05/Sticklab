@@ -5,9 +5,9 @@ import { Phone, SpeechBubble, Table } from "../Props";
 import { Scene } from "../Scene";
 import { Stickman } from "../Stickman";
 import { compileStory } from "./StoryEngine";
-import { sampleStory } from "./sampleStory";
+import { generatedStory } from "./generatedStory";
 
-const compiledStory = compileStory(sampleStory);
+const compiledStory = compileStory(generatedStory);
 
 /** Plays the active compiled story scene using the real Remotion components. */
 export const StoryPlayer: React.FC = () => {
