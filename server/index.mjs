@@ -7,7 +7,6 @@ import { storyResponseSchema } from "./story-schema.mjs";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = Number(process.env.STICKLAB_PORT || 4179);
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-const API_KEY = process.env.GEMINI_API_KEY;
 
 function loadEnvFile() {
   // Small .env reader so this server needs no extra runtime dependencies.
@@ -111,13 +110,14 @@ Do not add markdown, explanations, extra fields, sound files, URLs, or instructi
 `;
 
 async function generateStory(topic, duration) {
-  if (!API_KEY) throw new Error("GEMINI_API_KEY is missing. Add it to the project's .env file.");
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is missing. Add it to the project .env file.");
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-goog-api-key": API_KEY,
+      "x-goog-api-key": apiKey,
     },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: promptFor(topic, duration) }] }],
@@ -166,7 +166,7 @@ const server = createServer(async (request, response) => {
   }
 
   if (request.method === "GET" && url.pathname === "/api/health") {
-    sendJson(response, 200, { ok: true, configured: Boolean(process.env.GEMINI_API_KEY || API_KEY), model: MODEL });
+    sendJson(response, 200, { ok: true, configured: Boolean(process.env.GEMINI_API_KEY), model: MODEL });
     return;
   }
 
