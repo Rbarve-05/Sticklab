@@ -8,7 +8,6 @@ import { Phone, SpeechBubble, Table } from "./Props";
 export const StickmanDemo: React.FC = () => {
   const frame = useCurrentFrame();
   const reveal = frame >= 150;
-  const closeUp = frame >= 150;
 
   return (
     <Scene
@@ -20,7 +19,7 @@ export const StickmanDemo: React.FC = () => {
         startFrame={90}
         durationFrames={60}
         scaleFrom={1}
-        scaleTo={closeUp ? 1.16 : 1.16}
+        scaleTo={1.16}
         xTo={0}
         yTo={-18}
       >
