@@ -1,16 +1,20 @@
 import React from "react";
 import { Composition } from "remotion";
-import { StickmanDemo } from "./StickmanDemo";
+import { StoryPlayer } from "./story/StoryPlayer";
+import { compileStory } from "./story/StoryEngine";
+import { sampleStory } from "./story/sampleStory";
+
+const compiledStory = compileStory(sampleStory);
 
 export const MyComposition: React.FC = () => {
   return (
     <Composition
       id="StickmanDemo"
-      component={StickmanDemo}
-      durationInFrames={300}
-      fps={30}
-      width={1080}
-      height={1920}
+      component={StoryPlayer}
+      durationInFrames={compiledStory.durationInFrames}
+      fps={compiledStory.fps}
+      width={compiledStory.width}
+      height={compiledStory.height}
     />
   );
 };
