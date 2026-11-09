@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>STICKLAB — AI Story Generator</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, Segoe UI, Arial, sans-serif; background: #101010; color: #f5f5f5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px; }
+    main { width: min(720px, 100%); border: 1px solid #333; border-radius: 22px; padding: 32px; background: #181818; box-shadow: 0 24px 80px #0008; }
+    .brand { letter-spacing: .22em; font-weight: 900; font-size: 14px; color: #ffd84d; }
+    h1 { margin: 18px 0 8px; font-size: clamp(28px, 5vw, 42px); }
+    p { color: #aaa; line-height: 1.6; }
+    label { display: block; margin: 22px 0 9px; font-size: 13px; font-weight: 700; color: #ddd; }
+    textarea, select { width: 100%; border: 1px solid #444; border-radius: 12px; background: #101010; color: #fff; padding: 14px; font: inherit; }
+    textarea { min-height: 120px; resize: vertical; }
+    button { width: 100%; margin-top: 20px; border: 0; border-radius: 12px; padding: 15px; background: #ffd84d; color: #151515; font-size: 15px; font-weight: 900; cursor: pointer; }
+    button:disabled { opacity: .55; cursor: wait; }
+    #status { margin-top: 18px; padding: 12px 14px; border-radius: 10px; background: #242424; color: #ccc; min-height: 44px; white-space: pre-wrap; }
+    #result { margin-top: 20px; display: none; }
+    #result h2 { font-size: 20px; }
+    .scene { border-top: 1px solid #333; padding: 14px 0; }
+    .scene strong { color: #ffd84d; }
+    .meta { font-size: 12px; color: #888; }
+    .note { font-size: 12px; color: #888; margin-top: 18px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand">STICKLAB</div>
+    <h1>Turn a topic into a story.</h1>
+    <p>Gemini creates a short-form story, scene plan, characters, dialogue and camera directions. The result is saved directly into your Remotion project.</p>
+    <form id="form">
+      <label for="topic">YOUR STORY IDEA</label>
+      <textarea id="topic" minlength="8" maxlength="500" required placeholder="A boy receives a mysterious message from his future self..."></textarea>
+      <label for="duration">VIDEO LENGTH</label>
+      <select id="duration">
+        <option value="30">30 seconds</option>
+        <option value="45">45 seconds</option>
+      </select>
+      <button id="generate" type="submit">GENERATE STORY WITH GEMINI</button>
+    </form>
+    <div id="status" role="status">Ready. Add a Gemini API key to .env before generating.</div>
+    <section id="result">
+      <h2 id="storyTitle"></h2>
+      <div id="scenes"></div>
+    </section>
+    <div class="note">Your API key stays on this local server. Generated story data is written to src/story/generatedStory.ts.</div>
+  </main>
+  <script>
+    const form = document.querySelector("#form");
+    const button = document.querySelector("#generate");
+    const status = document.querySelector("#status");
+    const result = document.querySelector("#result");
+    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      button.disabled = true;
+      button.textContent = "GENERATING...";
+      status.textContent = "Gemini is writing your story. This can take a few seconds...";
+      result.style.display = "none";
+      try {
+        const response = await fetch("/api/generate-story", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            topic: document.querySelector("#topic").value,
+            durationSeconds: Number(document.querySelector("#duration").value)
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Generation failed.");
+        document.querySelector("#storyTitle").textContent = data.story.title;
+        document.querySelector("#scenes").innerHTML = data.story.scenes.map((scene, index) =>
+          '<article class="scene"><strong>SCENE ' + (index + 1) + ' · ' + escapeHtml(scene.durationSeconds) + 's</strong><p>' +
+          escapeHtml(scene.narration) + '</p><div class="meta">' +
+          escapeHtml(scene.characters.map((character) => character.id + ": " + character.expression + " / " + character.action).join(" · ")) +
+          '</div></article>'
+        ).join("");
+        result.style.display = "block";
+        status.textContent = data.message + " Refresh or scrub Remotion Studio to preview it.";
+      } catch (error) {
+        status.textContent = error.message;
+      } finally {
+        button.disabled = false;
+        button.textContent = "GENERATE STORY WITH GEMINI";
+      }
+    });
+  </script>
+</body>
+</html>
