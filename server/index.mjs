@@ -4,6 +4,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { storyResponseSchema } from "./story-schema.mjs";
 import { createSoundDesign } from "./sound-design.mjs";
+import { createVoiceover } from "./voiceover.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = Number(process.env.STICKLAB_PORT || 4179);
@@ -150,6 +151,14 @@ async function generateStory(topic, duration) {
   if (errors.length) throw new Error(`Generated story failed validation: ${errors.join(" ")}`);
 
   const audioInfo = await createSoundDesign(story, resolve(ROOT, "public/audio/story-sfx.wav"));
+  let voiceoverInfo = { generated: false };
+  if (process.env.GEMINI_TTS_ENABLED === "true") {
+    try {
+      voiceoverInfo = await createVoiceover(story, apiKey, resolve(ROOT, "public/audio/voiceover.wav"));
+    } catch (error) {
+      console.warn("Voiceover generation skipped:", error instanceof Error ? error.message : error);
+    }
+  }
   const output = `import type { StoryDocument } from "./types";
 
 export const generatedStory: StoryDocument = ${JSON.stringify(story, null, 2)};
