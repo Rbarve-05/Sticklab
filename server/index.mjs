@@ -164,6 +164,9 @@ async function generateStory(topic, duration) {
 
   // Gemini JSON mode does not guarantee every metadata field. Normalize
   // predictable renderer metadata before strict validation and saving.
+  story.title = typeof story.title === "string" && story.title.trim()
+    ? story.title.trim()
+    : "The Countdown";
   story.fps = Number.isFinite(story.fps) ? story.fps : 30;
   story.width = Number.isFinite(story.width) ? story.width : 1080;
   story.height = Number.isFinite(story.height) ? story.height : 1920;
