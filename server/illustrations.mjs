@@ -26,7 +26,7 @@ export async function createIllustratedScenes(story, apiKey, publicDir) {
       "Frame description: " + (scene.visualPrompt || scene.narration || story.title),
       "Narrative context: " + (scene.narration || ""),
       "Avoid stick figures, flat vector art, childish cartoons, generic stock-photo appearance, and text rendered inside the image.",
-    ].join("\\n");
+    ].join("\n");
 
     const parts = [{ text: prompt }];
     if (continuityReference) {
@@ -34,7 +34,7 @@ export async function createIllustratedScenes(story, apiKey, publicDir) {
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       {
         method: "POST",
         headers: {
@@ -44,9 +44,10 @@ export async function createIllustratedScenes(story, apiKey, publicDir) {
         body: JSON.stringify({
           contents: [{ role: "user", parts }],
           generationConfig: {
-            responseModalities: ["IMAGE"],
-            responseFormat: {
-              image: { aspectRatio: "9:16", imageSize: "1K" },
+            responseModalities: ["TEXT", "IMAGE"],
+            imageConfig: {
+              aspectRatio: "9:16",
+              imageSize: "1K",
             },
           },
         }),
