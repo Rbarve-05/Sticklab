@@ -28,6 +28,7 @@ export type StoryCamera = {
 };
 
 export type StoryScene = {
+  environment?: "city" | "street" | "room" | "office" | "abstract";
   id: string;
   durationSeconds: number;
   background?: string;
