@@ -167,7 +167,9 @@ async function generateStory(topic, duration) {
   story.fps = Number.isFinite(story.fps) ? story.fps : 30;
   story.width = Number.isFinite(story.width) ? story.width : 1080;
   story.height = Number.isFinite(story.height) ? story.height : 1920;
-  if (Array.isArray(story.scenes)) {
+  // Normalize missing or malformed scene containers as well as short arrays.
+  if (!Array.isArray(story.scenes)) story.scenes = [];
+  {
     // The renderer requires 3-7 scenes. If Gemini returns too few, split
     // existing beats into distinct timed shots; if too many, cap at 7.
     if (story.scenes.length > 7) story.scenes = story.scenes.slice(0, 7);
