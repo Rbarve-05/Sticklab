@@ -18,6 +18,7 @@ export const storyResponseSchema = {
           id: { type: "STRING" },
           durationSeconds: { type: "NUMBER" },
           background: { type: "STRING" },
+          environment: { type: "STRING", enum: ["city", "street", "room", "office", "abstract"] },
           narration: { type: "STRING" },
           dialogue: {
             type: "ARRAY",
