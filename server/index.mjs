@@ -207,6 +207,7 @@ const server = createServer(async (request, response) => {
         story,
       });
     } catch (error) {
+      console.error("[STICKLAB story generation error]", error);
       sendJson(response, 500, { error: error instanceof Error ? error.message : "Story generation failed." });
     }
     return;
