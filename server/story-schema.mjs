@@ -5,9 +5,9 @@ export const storyResponseSchema = {
   type: "OBJECT",
   properties: {
     title: { type: "STRING" },
-    fps: { type: "INTEGER", enum: [30] },
-    width: { type: "INTEGER", enum: [1080] },
-    height: { type: "INTEGER", enum: [1920] },
+    fps: { type: "INTEGER" },
+    width: { type: "INTEGER" },
+    height: { type: "INTEGER" },
     scenes: {
       type: "ARRAY",
       minItems: 3,
