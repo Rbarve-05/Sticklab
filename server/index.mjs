@@ -123,8 +123,10 @@ async function generateStory(topic, duration) {
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: promptFor(topic, duration) }] }],
       generationConfig: {
+        // Ask for JSON output without sending a nested responseSchema. This
+        // avoids Gemini structured-schema compilation failures; the server
+        // validates the parsed story against the application rules below.
         responseMimeType: "application/json",
-        responseSchema: storyResponseSchema,
         temperature: 0.9,
       },
     }),
