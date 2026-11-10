@@ -10,8 +10,6 @@ export const storyResponseSchema = {
     height: { type: "INTEGER" },
     scenes: {
       type: "ARRAY",
-      minItems: 3,
-      maxItems: 7,
       items: {
         type: "OBJECT",
         properties: {
@@ -33,8 +31,6 @@ export const storyResponseSchema = {
           },
           characters: {
             type: "ARRAY",
-            minItems: 1,
-            maxItems: 3,
             items: {
               type: "OBJECT",
               properties: {
