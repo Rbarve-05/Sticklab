@@ -162,6 +162,26 @@ async function generateStory(topic, duration) {
     throw new Error("Gemini response was not valid JSON. Please try again.");
   }
 
+  // Gemini JSON mode does not guarantee every metadata field. Normalize
+  // predictable renderer metadata before strict validation and saving.
+  story.fps = Number.isFinite(story.fps) ? story.fps : 30;
+  story.width = Number.isFinite(story.width) ? story.width : 1080;
+  story.height = Number.isFinite(story.height) ? story.height : 1920;
+  if (Array.isArray(story.scenes)) {
+    story.scenes = story.scenes.map((scene, sceneIndex) => {
+      const normalized = { ...scene, id: scene.id || `scene-${sceneIndex + 1}` };
+      if (Array.isArray(normalized.characters)) {
+        normalized.characters = normalized.characters.map((character, characterIndex) => ({
+          ...character,
+          id: character.id || `character-${characterIndex + 1}`,
+          action: character.action || "idle",
+          expression: character.expression || "neutral",
+        }));
+      }
+      return normalized;
+    });
+  }
+
   const errors = validateGeneratedStory(story, duration);
   if (errors.length) throw new Error(`Generated story failed validation: ${errors.join(" ")}`);
 
