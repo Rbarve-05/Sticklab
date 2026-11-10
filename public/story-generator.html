@@ -72,13 +72,19 @@
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Generation failed.");
-        document.querySelector("#storyTitle").textContent = data.story.title;
-        document.querySelector("#scenes").innerHTML = data.story.scenes.map((scene, index) =>
-          '<article class="scene"><strong>SCENE ' + (index + 1) + ' · ' + escapeHtml(scene.durationSeconds) + 's</strong><p>' +
-          escapeHtml(scene.narration) + '</p><div class="meta">' +
-          escapeHtml(scene.characters.map((character) => character.id + ": " + character.expression + " / " + character.action).join(" · ")) +
-          '</div></article>'
-        ).join("");
+        const story = data.story || {};
+        const scenes = Array.isArray(story.scenes) ? story.scenes : [];
+        document.querySelector("#storyTitle").textContent = story.title || "Generated story";
+        document.querySelector("#scenes").innerHTML = scenes.map((scene, index) => {
+          const characters = Array.isArray(scene.characters) ? scene.characters : [];
+          const characterSummary = characters.map((character) =>
+            (character.id || "character") + ": " + (character.expression || "neutral") + " / " + (character.action || "idle")
+          ).join(" · ");
+          return '<article class="scene"><strong>SCENE ' + (index + 1) + ' · ' + escapeHtml(scene.durationSeconds ?? 0) + 's</strong><p>' +
+            escapeHtml(scene.narration || "No narration supplied.") + '</p><div class="meta">' +
+            escapeHtml(characterSummary || "Default character") +
+            '</div></article>';
+        }).join("");
         result.style.display = "block";
         status.textContent = data.message + " Refresh or scrub Remotion Studio to preview it.";
       } catch (error) {
