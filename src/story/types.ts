@@ -28,6 +28,10 @@ export type StoryCamera = {
 };
 
 export type StoryScene = {
+  /** Relative path inside public/, e.g. scenes/scene-01.png. */
+  imagePath?: string;
+  /** Art direction prompt retained with the scene for reproducibility. */
+  visualPrompt?: string;
   environment?: "city" | "street" | "room" | "office" | "abstract";
   id: string;
   durationSeconds: number;
