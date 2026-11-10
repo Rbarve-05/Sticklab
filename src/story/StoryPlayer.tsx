@@ -1,5 +1,5 @@
 import React from "react";
-import { Audio, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Audio, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { Camera } from "../Camera";
 import { CaptionTrack } from "../CaptionTrack";
 import { Environment } from "../Environment";
@@ -29,8 +29,36 @@ export const StoryPlayer: React.FC = () => {
   const fadeOut = Math.min(1, (activeScene.endFrame - frame) / 7);
   const transitionOpacity = Math.max(0, 1 - Math.min(fadeIn, fadeOut));
 
+  const imageZoom = interpolate(
+    frame,
+    [activeScene.startFrame, activeScene.endFrame],
+    [1.015, 1.105],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) },
+  );
+
   return (
     <>
+      {activeScene.imagePath ? (
+        <AbsoluteFill style={{ backgroundColor: "#05080d", overflow: "hidden" }}>
+          <Img
+            src={staticFile(activeScene.imagePath)}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              transform: `scale(${imageZoom})`,
+            }}
+          />
+          <AbsoluteFill style={{ background: "linear-gradient(180deg, rgba(0,0,0,.12) 0%, transparent 30%, transparent 62%, rgba(0,0,0,.28) 100%)" }} />
+          <svg viewBox="0 0 1080 1920" width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
+            <CaptionTrack text={activeScene.narration} startFrame={activeScene.startFrame}
+              durationInFrames={activeScene.durationInFrames} />
+          </svg>
+          {transitionOpacity > 0 && (
+            <AbsoluteFill style={{ backgroundColor: "#020509", opacity: transitionOpacity * 0.72 }} />
+          )}
+        </AbsoluteFill>
+      ) : (
       <Scene title={compiledStory.title.toUpperCase()}
         subtitle={`${activeScene.id.toUpperCase()} / ${shot.framing.toUpperCase()} SHOT`}
         background={activeScene.background ?? "#FAFAFA"} floorY={1210}>
@@ -55,6 +83,7 @@ export const StoryPlayer: React.FC = () => {
         </text>
         {transitionOpacity > 0 && <rect x="0" y="0" width="1080" height="1920" fill="#08090D" opacity={transitionOpacity * 0.88} />}
       </Scene>
+      )}
       {hasGeneratedVoiceover && <Audio src={staticFile("audio/voiceover.wav")} volume={1} />}
       {hasGeneratedSfx && <Audio src={staticFile("audio/story-sfx.wav")} volume={0.72} /> }
     </>
