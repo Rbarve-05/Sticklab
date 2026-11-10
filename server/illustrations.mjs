@@ -15,17 +15,23 @@ export async function createIllustratedScenes(story, apiKey, publicDir) {
   await mkdir(outputDir, { recursive: true });
 
   const generated = [];
+  let continuityReference = null;
   for (const [index, scene] of scenes.entries()) {
     const fileName = `scene-${String(index + 1).padStart(2, "0")}.png`;
     const prompt = [
       "Create a single premium cinematic illustrated frame for a vertical mystery/horror short.",
       "Visual language: highly detailed digital illustration, painterly graphic-novel realism, atmospheric teal/cyan fog, restrained crimson practical lights, deep shadows, volumetric lighting, realistic wet-surface reflections, strong cinematic composition.",
       "Portrait 9:16 composition, full-bleed artwork, no borders, no panels, no captions, no subtitles, no logos, no watermarks, no UI.",
-      "Maintain a coherent visual world and recurring character appearance across the episode.",
+      "Maintain the same protagonist identity, hairstyle, clothing and silhouette as the previous scene reference, while changing the location details and camera composition to match this beat.",
       "Frame description: " + (scene.visualPrompt || scene.narration || story.title),
       "Narrative context: " + (scene.narration || ""),
       "Avoid stick figures, flat vector art, childish cartoons, generic stock-photo appearance, and text rendered inside the image.",
-    ].join("\n");
+    ].join("\\n");
+
+    const parts = [{ text: prompt }];
+    if (continuityReference) {
+      parts.push({ inlineData: { mimeType: "image/png", data: continuityReference } });
+    }
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`,
@@ -36,7 +42,7 @@ export async function createIllustratedScenes(story, apiKey, publicDir) {
           "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          contents: [{ role: "user", parts }],
           generationConfig: {
             responseModalities: ["IMAGE"],
             responseFormat: {
@@ -59,7 +65,8 @@ export async function createIllustratedScenes(story, apiKey, publicDir) {
       throw new Error(`Scene ${index + 1}: image model returned no image data.`);
     }
 
-    await writeFile(join(outputDir, fileName), Buffer.from(imagePart.inlineData.data, "base64"));
+    continuityReference = imagePart.inlineData.data;
+    await writeFile(join(outputDir, fileName), Buffer.from(continuityReference, "base64"));
     scene.imagePath = `scenes/${fileName}`;
     generated.push(scene.imagePath);
     console.log(`[STICKLAB] Illustrated scene ${index + 1}/${scenes.length}: ${fileName}`);
