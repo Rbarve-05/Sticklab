@@ -105,7 +105,7 @@ Use 1 to 3 recurring characters. Keep character IDs consistent across scenes.
 Allowed actions: idle, walk, run, jump, fall.
 Allowed expressions: neutral, happy, sad, shocked, angry, scared.
 Coordinate system: 1080x1920. Put characters in x=100..980 and y=500..1250. Use scale 0.7..2.0.
-Write a complete 45-second narration script across the scenes. Narration must sound natural when spoken by a deep, intimate cinematic storyteller: concise, vivid, suspenseful, with intentional short sentences and pauses before reveals. The first line must hook immediately. Every scene must reveal new information or raise a sharper question. Save the strongest reveal for the final scene. Avoid filler, generic phrases, and over-explaining.
+Write a complete 45-second narration script of approximately 90-100 spoken words across the scenes. Narration must sound natural when spoken by a deep, intimate cinematic storyteller: concise, vivid, suspenseful, with intentional short sentences and pauses before reveals. The first line must hook immediately. Every scene must reveal new information or raise a sharper question. Save the strongest reveal for the final scene. Avoid filler, generic phrases, and over-explaining.
 Dialogue is optional and should be short enough for a speech bubble (maximum 5 words).
 Set a distinct scene id for every scene. Include visualPrompt for every scene. The total runtime must be exactly the requested duration.
 Do not add markdown, explanations, extra fields, sound files, URLs, or instructions. Return only the schema-conforming story JSON.
@@ -198,6 +198,12 @@ async function generateStory(topic, duration) {
 
     story.scenes = story.scenes.map((scene, sceneIndex) => {
       const normalized = { ...scene, id: scene.id || `scene-${sceneIndex + 1}` };
+      normalized.narration = typeof normalized.narration === "string" && normalized.narration.trim()
+        ? normalized.narration.trim()
+        : "Something is wrong here. And nobody knows why.";
+      normalized.visualPrompt = typeof normalized.visualPrompt === "string" && normalized.visualPrompt.trim()
+        ? normalized.visualPrompt.trim()
+        : `Cinematic illustrated frame for ${story.title}: ${normalized.narration}. Detailed environment, strong composition, dramatic teal shadows and practical light.`;
       const suppliedCharacters = Array.isArray(normalized.characters) ? normalized.characters : [];
       normalized.characters = suppliedCharacters.slice(0, 3).map((character, characterIndex) => ({
         ...character,
@@ -228,8 +234,10 @@ async function generateStory(topic, duration) {
 
     // Preserve the requested runtime exactly. Apply small model rounding drift
     // to the final scene instead of rejecting an otherwise usable story.
+    // Align scene cuts and caption windows to narration length so the
+    // continuous voiceover and per-scene captions stay close together.
     const rawDurations = story.scenes.map((scene) =>
-      Number.isFinite(scene.durationSeconds) && scene.durationSeconds > 0 ? scene.durationSeconds : 1,
+      Math.max(1, (scene.narration || "").trim().split(/\s+/).filter(Boolean).length),
     );
     const rawTotal = rawDurations.reduce((sum, value) => sum + value, 0);
     let assignedFrames = 0;
