@@ -30,16 +30,15 @@
   <main>
     <div class="brand">STICKLAB</div>
     <h1>Turn a topic into a story.</h1>
-    <p>Gemini creates a short-form story, scene plan, characters, dialogue and camera directions. The result is saved directly into your Remotion project.</p>
+    <p>STICKLAB writes a suspense-driven 45-second script, creates cinematic illustrated scenes, and prepares deep narration, captions and sound for Remotion.</p>
     <form id="form">
       <label for="topic">YOUR STORY IDEA</label>
       <textarea id="topic" minlength="8" maxlength="500" required placeholder="A boy receives a mysterious message from his future self..."></textarea>
       <label for="duration">VIDEO LENGTH</label>
-      <select id="duration">
-        <option value="45" selected>45 seconds — STICKLAB default</option>
-        <option value="30">30 seconds</option>
+      <select id="duration" disabled>
+        <option value="45" selected>45 seconds — STICKLAB format</option>
       </select>
-      <button id="generate" type="submit">GENERATE STORY WITH GEMINI</button>
+      <button id="generate" type="submit">CREATE CINEMATIC SHORT</button>
     </form>
     <div id="status" role="status">Ready. Add a Gemini API key to .env before generating.</div>
     <section id="result">
@@ -59,7 +58,7 @@
       event.preventDefault();
       button.disabled = true;
       button.textContent = "GENERATING...";
-      status.textContent = "Gemini is writing your story. This can take a few seconds...";
+      status.textContent = "Writing the story, preparing narration and building your illustrated scenes. This may take a few minutes...";
       result.style.display = "none";
       try {
         const response = await fetch("/api/generate-story", {
@@ -91,7 +90,7 @@
         status.textContent = error.message;
       } finally {
         button.disabled = false;
-        button.textContent = "GENERATE STORY WITH GEMINI";
+        button.textContent = "CREATE CINEMATIC SHORT";
       }
     });
   </script>
