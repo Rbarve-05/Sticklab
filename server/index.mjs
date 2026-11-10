@@ -113,32 +113,44 @@ Do not add markdown, explanations, extra fields, sound files, URLs, or instructi
 async function generateStory(topic, duration) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is missing. Add it to the project .env file.");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-goog-api-key": apiKey,
+  const modelsToTry = [...new Set([MODEL, "gemini-3.8-flash", "gemini-3.5-flash"])];
+  const requestBody = JSON.stringify({
+    contents: [{ role: "user", parts: [{ text: promptFor(topic, duration) }] }],
+    generationConfig: {
+      // JSON mode; application validation runs after parsing.
+      responseMimeType: "application/json",
+      temperature: 0.9,
     },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: promptFor(topic, duration) }] }],
-      generationConfig: {
-        // Ask for JSON output without sending a nested responseSchema. This
-        // avoids Gemini structured-schema compilation failures; the server
-        // validates the parsed story against the application rules below.
-        responseMimeType: "application/json",
-        temperature: 0.9,
-      },
-    }),
-    signal: AbortSignal.timeout(90_000),
   });
+
+  let response;
+  let activeModel = MODEL;
+  for (const model of modelsToTry) {
+    activeModel = model;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: requestBody,
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (response.ok) break;
+
+    // A 503/429 is a capacity or rate-limit response, not a bad story.
+    // Try another supported Flash model automatically before giving up.
+    if (![429, 503].includes(response.status)) break;
+    console.warn(`Gemini model ${model} returned HTTP ${response.status}; trying the next fallback if available.`);
+  }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    console.error("[STICKLAB Gemini API response]", JSON.stringify(data, null, 2));
+    console.error(`[STICKLAB Gemini API response from ${activeModel}]`, JSON.stringify(data, null, 2));
     const message = data?.error?.message || `Gemini request failed with HTTP ${response.status}.`;
     const details = data?.error?.details ? ` Details: ${JSON.stringify(data.error.details)}` : "";
-    throw new Error(`${message} (HTTP ${response.status})${details}`);
+    throw new Error(`${message} (HTTP ${response.status}, model ${activeModel})${details}`);
   }
 
   const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("");
