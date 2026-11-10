@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { storyResponseSchema } from "./story-schema.mjs";
 import { createSoundDesign } from "./sound-design.mjs";
 import { createVoiceover } from "./voiceover.mjs";
+import { createIllustratedScenes } from "./illustrations.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = Number(process.env.STICKLAB_PORT || 4179);
@@ -93,20 +94,20 @@ function validateGeneratedStory(story, targetDuration) {
 }
 
 const promptFor = (topic, duration) => `
-You are the cinematic story director for STICKLAB, a code-rendered stylized 2.5D cartoon YouTube Shorts engine.
+You are the lead writer and visual director for STICKLAB, a cinematic illustrated mystery/horror YouTube Shorts studio.
 Create an original, highly engaging short story from this topic: "${topic}"
 
 Target runtime: exactly ${duration} seconds at 30 FPS. Return 3 to 7 scenes whose durationSeconds add up to exactly ${duration}.
 Audience: general English-speaking YouTube Shorts viewers. Write natural, punchy English.
 Story structure: immediate hook in the first 2 seconds, clear escalation, visual payoff or twist, satisfying ending.
-Create visually rich but code-buildable scenes: layered city/street/interior environments, foreground/midground/background separation, expressive recurring cartoon characters, and useful props. All visuals are drawn procedurally with SVG shapes; do not request imported images or video clips. Use environment values city, street, room, office or abstract. Plan a visual rhythm with wide establishing views, medium character action and close-up reactions; the renderer creates 2-4 shots per scene.
+Create 5 to 7 cinematic illustrated scenes. Each scene must include a specific visualPrompt describing one premium portrait 9:16 illustrated frame: camera angle, environment, subject placement, lighting, atmosphere, foreground/midground/background, and the exact story beat. Visual direction: painterly graphic-novel realism, atmospheric teal/cyan shadows, restrained red practical lights, volumetric fog, detailed environments, wet reflections where appropriate. Keep recurring characters visually consistent by repeating their defining appearance in each visualPrompt. Do not ask the renderer to draw stick figures or use flat vector art. The renderer will apply only subtle slow zooms and clean hard cuts between still illustrations.
 Use 1 to 3 recurring characters. Keep character IDs consistent across scenes.
 Allowed actions: idle, walk, run, jump, fall.
 Allowed expressions: neutral, happy, sad, shocked, angry, scared.
 Coordinate system: 1080x1920. Put characters in x=100..980 and y=500..1250. Use scale 0.7..2.0.
-Use punchy narration per scene (one or two short sentences, suitable for energetic voiceover and timed captions). Create an immediate hook, escalate every 5-8 seconds, and reserve the final scene for the twist/payoff.
+Write a complete 45-second narration script across the scenes. Narration must sound natural when spoken by a deep, intimate cinematic storyteller: concise, vivid, suspenseful, with intentional short sentences and pauses before reveals. The first line must hook immediately. Every scene must reveal new information or raise a sharper question. Save the strongest reveal for the final scene. Avoid filler, generic phrases, and over-explaining.
 Dialogue is optional and should be short enough for a speech bubble (maximum 5 words).
-Set a distinct scene id for every scene. Set camera scale between 1 and 1.25. Use backgrounds as simple hex colors.
+Set a distinct scene id for every scene. Include visualPrompt for every scene. The total runtime must be exactly the requested duration.
 Do not add markdown, explanations, extra fields, sound files, URLs, or instructions. Return only the schema-conforming story JSON.
 `;
 
@@ -244,6 +245,11 @@ async function generateStory(topic, duration) {
   const errors = validateGeneratedStory(story, duration);
   if (errors.length) throw new Error(`Generated story failed validation: ${errors.join(" ")}`);
 
+  let illustrationInfo = { generated: 0, paths: [] };
+  if (process.env.STICKLAB_IMAGE_GENERATION_ENABLED === "true") {
+    illustrationInfo = await createIllustratedScenes(story, apiKey, resolve(ROOT, "public"));
+  }
+
   const audioInfo = await createSoundDesign(story, resolve(ROOT, "public/audio/story-sfx.wav"));
   let voiceoverInfo = { generated: false };
   if (process.env.GEMINI_TTS_ENABLED === "true") {
@@ -258,7 +264,7 @@ async function generateStory(topic, duration) {
 export const generatedStory: StoryDocument = ${JSON.stringify(story, null, 2)};
 export const hasGeneratedSfx = true;
 export const hasGeneratedVoiceover = ${voiceoverInfo.generated};
-// Procedural SFX track: ${audioInfo.durationSeconds}s at ${audioInfo.sampleRate}Hz.
+// Procedural SFX track: ${audioInfo.durationSeconds}s at ${audioInfo.sampleRate}Hz.\n// Illustrated scenes generated: ${illustrationInfo.generated}.
 `;
   await writeFile(resolve(ROOT, "src/story/generatedStory.ts"), output, "utf8");
   return story;
@@ -298,7 +304,7 @@ const server = createServer(async (request, response) => {
       const story = await generateStory(topic, duration);
       sendJson(response, 200, {
         ok: true,
-        message: "Story generated and saved. Remotion Studio should hot-reload.",
+        message: "Story generated and saved. " + (story.scenes.some((scene) => scene.imagePath) ? "Illustrated frames are ready. " : "Enable STICKLAB_IMAGE_GENERATION_ENABLED for illustrated frames. ") + (voiceoverInfo.generated ? "Deep cinematic voiceover is ready. " : "Enable GEMINI_TTS_ENABLED for deep cinematic voiceover. ") + "Remotion Studio should hot-reload.",
         story,
       });
     } catch (error) {
