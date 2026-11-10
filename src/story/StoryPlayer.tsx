@@ -7,7 +7,7 @@ import { Phone, SpeechBubble, Table } from "../Props";
 import { Scene } from "../Scene";
 import { Stickman } from "../Stickman";
 import { compileStory } from "./StoryEngine";
-import { generatedStory, hasGeneratedSfx } from "./generatedStory";
+import { generatedStory, hasGeneratedSfx, hasGeneratedVoiceover } from "./generatedStory";
 import { getShotAtFrame, planCinematicShots } from "./CinematicDirector";
 
 const compiledStory = compileStory(generatedStory);
@@ -55,7 +55,8 @@ export const StoryPlayer: React.FC = () => {
         </text>
         {transitionOpacity > 0 && <rect x="0" y="0" width="1080" height="1920" fill="#08090D" opacity={transitionOpacity * 0.88} />}
       </Scene>
-      {hasGeneratedSfx && <Audio src={staticFile("audio/story-sfx.wav")} volume={0.72} />}
+      {hasGeneratedVoiceover && <Audio src={staticFile("audio/voiceover.wav")} volume={1} />}
+      {hasGeneratedSfx && <Audio src={staticFile("audio/story-sfx.wav")} volume={0.72} /> }
     </>
   );
 };
