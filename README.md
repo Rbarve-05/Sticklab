@@ -1,69 +1,64 @@
 # STICKLAB
 
-A programmatic minimalist 2D stickman storytelling Shorts generator.
+STICKLAB creates 45-second vertical illustrated mystery/horror Shorts. Remotion is the compositor: it applies restrained camera movement, scene cuts, captions, voiceover and sound.
 
-## Project direction
+## Locked production direction
 
-STICKLAB turns a structured story into a vertical animated video:
-1. Story brief and scene plan
-2. Reusable stickman animation components
-3. Narration and timed captions
-4. Music and sound effects
-5. 1080x1920 MP4 rendering
+- Visuals: cinematic illustrated 9:16 still frames, painterly graphic-novel realism
+- Mood: atmospheric teal/cyan shadows, restrained red practical lights, volumetric fog and detailed environments
+- Runtime: 45 seconds at 30 FPS, 1080x1920
+- Editing: slow push-ins, subtle pans and clean hard cuts; no complex character rigs
+- Narration: deep, warm, intimate cinematic storyteller
+- Captions: large two-line white captions with yellow active-word emphasis
+- Sound: original procedural transition and reveal effects
 
-## Local development
+## Local setup
 
-This repository is being connected to an existing Remotion project. Keep your local project files safe and push them before replacing or reorganizing existing files.
+1. Copy `.env.example` to `.env`.
+2. Add your Gemini API key to `GEMINI_API_KEY`.
+3. Enable the paid/usage-metered generation stages you want to run:
 
-## First milestone
+```env
+STICKLAB_IMAGE_GENERATION_ENABLED=true
+GEMINI_IMAGE_MODEL=gemini-3.1-flash-image
+GEMINI_TTS_ENABLED=true
+GEMINI_TTS_MODEL=gemini-3.8-flash-tts
+GEMINI_TTS_VOICE=Charon
+```
 
-Build a reusable SVG stickman with deterministic idle and walk cycles, then render a short preview composition.
+Image generation and TTS can incur separate Gemini API charges. Keep either flag false to skip that stage. Generated scene images are saved under `public/scenes/`; narration is saved to `public/audio/voiceover.wav`.
 
+4. Start Remotion Studio:
 
-## Gemini AI Story Generator
+```bash
+npm run dev
+```
 
-The local generator uses Gemini structured JSON output and writes a validated story directly into `src/story/generatedStory.ts`.
-
-1. Create a Gemini API key in Google AI Studio.
-2. Copy `.env.example` to `.env`.
-3. Add your key to `GEMINI_API_KEY` in `.env`. Never commit the real `.env` file.
-4. Start the local story server in a second terminal:
+5. In a second terminal, start the local story server:
 
 ```bash
 node server/index.mjs
 ```
 
-5. Open `http://127.0.0.1:4179`, enter a topic, and generate a 30- or 45-second story.
-6. The generated story is saved to `src/story/generatedStory.ts`; Remotion Studio should hot-reload the composition.
+6. Open `http://127.0.0.1:4179`, enter a story idea and create the Short. The generator writes the story to `src/story/generatedStory.ts`. Refresh or scrub Remotion Studio to preview.
 
-The server binds only to localhost and uses Node's built-in HTTP and fetch APIs, so it adds no runtime package dependency. Default model: `gemini-3.8-flash`. Override with `GEMINI_MODEL` in `.env`.
+## Production pipeline
 
-### Story generator files
-- `server/index.mjs`: local Gemini API server
-- `server/story-schema.mjs`: constrained response schema
-- `public/story-generator.html`: local prompt interface
-- `src/story/generatedStory.ts`: active generated story, initially falling back to the sample
+1. Gemini writes a 45-second script and scene-by-scene visual prompts.
+2. Gemini 3.1 Flash Image creates one 9:16 illustrated frame per scene.
+3. Gemini 3.8 Flash TTS creates the deep cinematic narration WAV.
+4. The caption track highlights words using narration-weighted timing.
+5. Remotion applies subtle zooms, hard cuts, captions, narration and SFX, then renders MP4.
 
+## Key files
 
-## Cinematic production engine (45-second target)
+- `server/index.mjs`: story generation and pipeline orchestration
+- `server/illustrations.mjs`: per-scene illustrated frame generation
+- `server/voiceover.mjs`: documented Gemini generateContent TTS integration
+- `server/sound-design.mjs`: procedural sound effects
+- `src/story/StoryPlayer.tsx`: image-first scene compositor with a legacy fallback
+- `src/CaptionTrack.tsx`: high-contrast word-emphasis captions
+- `src/story/StoryEngine.ts`: story validation and frame timing
+- `src/story/generatedStory.ts`: current generated story
 
-The cinematic renderer uses only code-generated SVG/Remotion assets:
-- `src/Environment.tsx`: procedural layered 2.5D environments
-- `src/story/CinematicDirector.ts`: deterministic 2-4 shot edit per story scene, with wide/medium/close framing and camera moves
-- `src/CaptionTrack.tsx`: timed burned-in narration captions with active-word emphasis
-- `server/sound-design.mjs`: synthesizes an original WAV SFX track (scene whooshes, notification pings and ending impact)
-- `src/story/StoryPlayer.tsx`: combines environment, characters, camera shots, captions, transitions and audio
-
-The story generator defaults to 45 seconds. Gemini is prompted to write for procedural 2.5D environments and visual escalation.
-
-### Optional Gemini voiceover
-
-Narration voiceover is optional and disabled by default to avoid unexpected API usage. To enable it, set these values in your local `.env`:
-
-```env
-GEMINI_TTS_ENABLED=true
-GEMINI_TTS_MODEL=gemini-3.8-flash-tts
-GEMINI_TTS_VOICE=Puck
-```
-
-The local server then creates `public/audio/voiceover.wav` using Gemini TTS and the generated narration. This may incur API charges. The procedural SFX track is generated locally and does not require a second API key.
+Never commit `.env` or API keys.
