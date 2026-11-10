@@ -168,6 +168,28 @@ async function generateStory(topic, duration) {
   story.width = Number.isFinite(story.width) ? story.width : 1080;
   story.height = Number.isFinite(story.height) ? story.height : 1920;
   if (Array.isArray(story.scenes)) {
+    // The renderer requires 3-7 scenes. If Gemini returns too few, split
+    // existing beats into distinct timed shots; if too many, cap at 7.
+    if (story.scenes.length > 7) story.scenes = story.scenes.slice(0, 7);
+    while (story.scenes.length > 0 && story.scenes.length < 3) {
+      const source = story.scenes[story.scenes.length - 1];
+      story.scenes.push({
+        ...source,
+        id: `scene-${story.scenes.length + 1}`,
+        narration: source.narration || "The moment changes everything.",
+        characters: Array.isArray(source.characters) ? source.characters.map((character) => ({ ...character })) : [],
+        props: Array.isArray(source.props) ? source.props.map((prop) => ({ ...prop })) : [],
+        dialogue: Array.isArray(source.dialogue) ? source.dialogue.map((line) => ({ ...line })) : [],
+      });
+    }
+    if (story.scenes.length === 0) {
+      story.scenes = [
+        { id: "scene-1", narration: `A strange event begins: ${topic}.`, characters: [] },
+        { id: "scene-2", narration: "The situation suddenly becomes more dangerous.", characters: [] },
+        { id: "scene-3", narration: "One final choice changes everything.", characters: [] },
+      ];
+    }
+
     story.scenes = story.scenes.map((scene, sceneIndex) => {
       const normalized = { ...scene, id: scene.id || `scene-${sceneIndex + 1}` };
       const suppliedCharacters = Array.isArray(normalized.characters) ? normalized.characters : [];
@@ -200,15 +222,18 @@ async function generateStory(topic, duration) {
 
     // Preserve the requested runtime exactly. Apply small model rounding drift
     // to the final scene instead of rejecting an otherwise usable story.
-    const suppliedTotal = story.scenes.reduce(
-      (sum, scene) => sum + (Number.isFinite(scene.durationSeconds) ? scene.durationSeconds : 0),
-      0,
+    const rawDurations = story.scenes.map((scene) =>
+      Number.isFinite(scene.durationSeconds) && scene.durationSeconds > 0 ? scene.durationSeconds : 1,
     );
-    const drift = duration - suppliedTotal;
-    if (story.scenes.length > 0 && Math.abs(drift) <= 3) {
-      const lastScene = story.scenes[story.scenes.length - 1];
-      lastScene.durationSeconds = Math.max(1, lastScene.durationSeconds + drift);
-    }
+    const rawTotal = rawDurations.reduce((sum, value) => sum + value, 0);
+    let assignedFrames = 0;
+    story.scenes = story.scenes.map((scene, index) => {
+      const durationSeconds = index === story.scenes.length - 1
+        ? duration / 1 - assignedFrames
+        : Math.round((rawDurations[index] / rawTotal) * duration * 10) / 10;
+      assignedFrames += durationSeconds;
+      return { ...scene, durationSeconds };
+    });
   }
 
   const errors = validateGeneratedStory(story, duration);
