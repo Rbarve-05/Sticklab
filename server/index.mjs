@@ -133,8 +133,10 @@ async function generateStory(topic, duration) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    console.error("[STICKLAB Gemini API response]", JSON.stringify(data, null, 2));
     const message = data?.error?.message || `Gemini request failed with HTTP ${response.status}.`;
-    throw new Error(message);
+    const details = data?.error?.details ? ` Details: ${JSON.stringify(data.error.details)}` : "";
+    throw new Error(`${message} (HTTP ${response.status})${details}`);
   }
 
   const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("");
