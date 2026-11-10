@@ -43,3 +43,27 @@ The server binds only to localhost and uses Node's built-in HTTP and fetch APIs,
 - `server/story-schema.mjs`: constrained response schema
 - `public/story-generator.html`: local prompt interface
 - `src/story/generatedStory.ts`: active generated story, initially falling back to the sample
+
+
+## Cinematic production engine (45-second target)
+
+The cinematic renderer uses only code-generated SVG/Remotion assets:
+- `src/Environment.tsx`: procedural layered 2.5D environments
+- `src/story/CinematicDirector.ts`: deterministic 2-4 shot edit per story scene, with wide/medium/close framing and camera moves
+- `src/CaptionTrack.tsx`: timed burned-in narration captions with active-word emphasis
+- `server/sound-design.mjs`: synthesizes an original WAV SFX track (scene whooshes, notification pings and ending impact)
+- `src/story/StoryPlayer.tsx`: combines environment, characters, camera shots, captions, transitions and audio
+
+The story generator defaults to 45 seconds. Gemini is prompted to write for procedural 2.5D environments and visual escalation.
+
+### Optional Gemini voiceover
+
+Narration voiceover is optional and disabled by default to avoid unexpected API usage. To enable it, set these values in your local `.env`:
+
+```env
+GEMINI_TTS_ENABLED=true
+GEMINI_TTS_MODEL=gemini-3.8-flash-tts
+GEMINI_TTS_VOICE=Puck
+```
+
+The local server then creates `public/audio/voiceover.wav` using Gemini TTS and the generated narration. This may incur API charges. The procedural SFX track is generated locally and does not require a second API key.
