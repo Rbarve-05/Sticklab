@@ -11,7 +11,7 @@ export const validateStory = (
 ): StoryValidationResult => {
   const errors: string[] = [];
 
-  if (!story.title.trim()) errors.push("Story title is required.");
+  if (typeof story.title !== "string" || !story.title.trim()) errors.push("Story title is required.");
   if (!Number.isInteger(story.fps) || story.fps <= 0) {
     errors.push("FPS must be a positive integer.");
   }
@@ -21,7 +21,7 @@ export const validateStory = (
   if (!Number.isInteger(story.height) || story.height <= 0) {
     errors.push("Height must be a positive integer.");
   }
-  if (story.scenes.length === 0) errors.push("At least one scene is required.");
+  if (!Array.isArray(story.scenes) || story.scenes.length === 0) errors.push("At least one scene is required.");
 
   const sceneIds = new Set<string>();
 
