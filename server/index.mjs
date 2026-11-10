@@ -170,16 +170,45 @@ async function generateStory(topic, duration) {
   if (Array.isArray(story.scenes)) {
     story.scenes = story.scenes.map((scene, sceneIndex) => {
       const normalized = { ...scene, id: scene.id || `scene-${sceneIndex + 1}` };
-      if (Array.isArray(normalized.characters)) {
-        normalized.characters = normalized.characters.map((character, characterIndex) => ({
-          ...character,
-          id: character.id || `character-${characterIndex + 1}`,
-          action: character.action || "idle",
-          expression: character.expression || "neutral",
-        }));
+      const suppliedCharacters = Array.isArray(normalized.characters) ? normalized.characters : [];
+      normalized.characters = suppliedCharacters.slice(0, 3).map((character, characterIndex) => ({
+        ...character,
+        id: character.id || `character-${characterIndex + 1}`,
+        x: Number.isFinite(character.x) ? character.x : 540,
+        y: Number.isFinite(character.y) ? character.y : 1050,
+        scale: Number.isFinite(character.scale) ? character.scale : 1,
+        action: character.action || "idle",
+        expression: character.expression || "neutral",
+      }));
+      // Keep the renderer contract valid even when Gemini omits characters.
+      if (normalized.characters.length === 0) {
+        normalized.characters = [{
+          id: "protagonist",
+          x: 540,
+          y: 1050,
+          scale: 1,
+          action: "idle",
+          expression: "neutral",
+        }];
       }
+      const validCharacterIds = new Set(normalized.characters.map((character) => character.id));
+      normalized.dialogue = Array.isArray(normalized.dialogue)
+        ? normalized.dialogue.filter((line) => validCharacterIds.has(line.characterId))
+        : [];
       return normalized;
     });
+
+    // Preserve the requested runtime exactly. Apply small model rounding drift
+    // to the final scene instead of rejecting an otherwise usable story.
+    const suppliedTotal = story.scenes.reduce(
+      (sum, scene) => sum + (Number.isFinite(scene.durationSeconds) ? scene.durationSeconds : 0),
+      0,
+    );
+    const drift = duration - suppliedTotal;
+    if (story.scenes.length > 0 && Math.abs(drift) <= 3) {
+      const lastScene = story.scenes[story.scenes.length - 1];
+      lastScene.durationSeconds = Math.max(1, lastScene.durationSeconds + drift);
+    }
   }
 
   const errors = validateGeneratedStory(story, duration);
