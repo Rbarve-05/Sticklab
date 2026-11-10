@@ -163,6 +163,7 @@ async function generateStory(topic, duration) {
 
 export const generatedStory: StoryDocument = ${JSON.stringify(story, null, 2)};
 export const hasGeneratedSfx = true;
+export const hasGeneratedVoiceover = ${voiceoverInfo.generated};
 // Procedural SFX track: ${audioInfo.durationSeconds}s at ${audioInfo.sampleRate}Hz.
 `;
   await writeFile(resolve(ROOT, "src/story/generatedStory.ts"), output, "utf8");
