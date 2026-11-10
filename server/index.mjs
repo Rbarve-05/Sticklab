@@ -8,7 +8,6 @@ import { createVoiceover } from "./voiceover.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = Number(process.env.STICKLAB_PORT || 4179);
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
 function loadEnvFile() {
   // Small .env reader so this server needs no extra runtime dependencies.
@@ -171,6 +170,7 @@ export const hasGeneratedVoiceover = ${voiceoverInfo.generated};
 }
 
 await loadEnvFile();
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
 const server = createServer(async (request, response) => {
   const url = new URL(request.url || "/", `http://127.0.0.1:${PORT}`);
